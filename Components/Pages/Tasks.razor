@@ -1,0 +1,188 @@
+﻿@page "/tasks"
+
+@inject DatabaseService Db;
+@inject NavigationManager Navigation;
+@inject NavigationManager NavManager;
+
+
+<PageTitle>Úkoly</PageTitle>
+
+@if (tasks == null)
+{
+    <p>Žádné nalezené záznamy...</p>
+}
+else
+{
+    <table class="table my-5">
+
+        <thead>
+            <tr>
+                <th>Firma</th>
+                <th>Popis</th>
+                <th>Zadavatel</th>
+                <th>Řešitel</th>
+                <th>Termín nahlášení</th>
+                <th>Stav</th>
+                <th>Priorita</th>
+                <th>Termín vyřešení</th>
+                <th>Akce</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (int i = startPaging; i < endPaging && i < tasks.Count(); i++)
+            {
+                int index = i;
+                <tr>
+                    <td>
+                        <button @onclick="() => GetTaskItemsByCompanyAsync(tasks[index].Company)" class="btn btn-outline-secondary">@tasks[index].Company</button>
+                    </td>
+                    <td>@tasks[index].Description</td>
+                    <td>
+                        <button @onclick="() => GetTaskItemsByCreatorAsync(tasks[index].Creator)" class="btn btn-outline-secondary">@tasks[index].Creator</button>
+                    </td>
+                    <td>
+
+                        <button @onclick="() => GetTaskItemsByAssigneeAsync(tasks[index].Assignee)" class="btn btn-outline-secondary">@tasks[index].Assignee</button>
+                    </td>
+                    <td>@tasks[index].ReportedDate.ToString("d")</td>
+                    <td>@tasks[index].Status</td>
+                    <td>@tasks[index].Priority</td>
+                    <td>@tasks[index].DueDate.ToString("d")</td>
+                    <td>
+                        <a href="task/@tasks[index].Id" class="btn btn-outline-success bi bi-search"></a>
+                        <a href="task/@(tasks[index].Id)?edit=true" class="btn btn-outline-secondary bi bi-pencil-fill"></a>
+                        <button @onclick="() => deletedTaskItem = tasks[index]" class="btn btn-outline-danger bi bi-trash3-fill"></button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <div class="d-flex justify-content-center my-3">
+        <button @onclick="() => LoadPaging(-10)" class="btn btn-outline-dark mx-2">předchozí</button>
+        <button @onclick="() => LoadPaging(10)" class="btn btn-outline-dark mx-2">další</button>
+    </div>
+
+}
+
+@if (deletedTaskItem != null)
+{
+    <div class="modal d-block" tabindex="-1" style="display: block;" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Potvrzení</h5>
+                    <button type="button" class="btn-close" @onclick="() => deletedTaskItem = null" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Opravdu chcete tento záznam smazat?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="() => deletedTaskItem = null">Zrušit</button>
+                    <button type="button" class="btn btn-danger" @onclick="() => DeleteTaskItemAsync()">Smazat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int id { get; set; }
+    public string all { get; set; }
+    public string company { get; set; }
+    public string creator { get; set; }
+    public string assignee { get; set; }
+
+    private List<TaskItem> tasks = new List<TaskItem>();
+    private int startPaging = 0;
+    private int endPaging = 10;
+    private string search;
+
+    private TaskItem deletedTaskItem;
+
+    protected override async void OnInitialized()
+    {
+
+        var uri = NavManager.ToAbsoluteUri(NavManager.Uri);
+
+        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("all", out var all) && all == "true")
+        {
+
+            tasks = await Db.GetAllTaskItemsAsync();
+        }
+        else if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("company", out var company) && !string.IsNullOrWhiteSpace(company))
+        {
+
+            tasks = await Db.GetTaskItemsByCompanyAsync(company);
+        }
+        else if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("creator", out var creator) && !string.IsNullOrWhiteSpace(creator))
+        {
+            tasks = await Db.GetTaskItemsByCreatorAsync(creator);
+        }
+        else if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("assignee", out var assignee) && !string.IsNullOrWhiteSpace(assignee))
+        {
+            tasks = await Db.GetTaskItemsByAssigneeAsync(assignee);
+        }
+        else
+        {
+            tasks = null;
+        }
+
+    }
+
+    private async void LoadPaging(int count)
+    {
+        startPaging += count;
+        if (startPaging < 0)
+            startPaging = 0;
+        else if (startPaging + 10 > tasks.Count())
+            startPaging = Math.Max(tasks.Count() - 10, 0);
+
+        endPaging = startPaging + 10;
+    }
+
+    private async void GetAllTaskItemsAsync()
+    {
+        startPaging = 0;
+        endPaging = 10;
+        tasks = null;
+
+        tasks = await Db.GetAllTaskItemsAsync();
+    }
+
+    private async void DeleteTaskItemAsync()
+    {
+        await Db.DeleteTaskItemAsync(deletedTaskItem.Id);
+        startPaging = 0;
+        endPaging = 10;
+        deletedTaskItem = null;
+        tasks = await Db.GetAllTaskItemsAsync();
+    }
+
+    private async void GetTaskItemsByCompanyAsync(string company)
+    {
+        startPaging = 0;
+        endPaging = 10;
+        tasks = null;
+
+        tasks = await Db.GetTaskItemsByCompanyAsync(company);
+    }
+
+    private async void GetTaskItemsByCreatorAsync(string creator)
+    {
+        startPaging = 0;
+        endPaging = 10;
+        tasks = null;
+
+        tasks = await Db.GetTaskItemsByCreatorAsync(creator);
+    }
+
+    private async void GetTaskItemsByAssigneeAsync(string assignee)
+    {
+        startPaging = 0;
+        endPaging = 10;
+        tasks = null;
+        tasks = await Db.GetTaskItemsByAssigneeAsync(assignee);
+    }
+}
+
