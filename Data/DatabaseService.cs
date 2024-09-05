@@ -5,10 +5,12 @@ using SQLitePCL;
 
 namespace RecordOfTasks.Data
 {
+    // Proč jsou docs komentáře jen někde?
     public class DatabaseService
     {
 
         private readonly string _connectionString;
+
         public DatabaseService(string connectionString)
         {
             _connectionString = connectionString;
@@ -28,9 +30,13 @@ namespace RecordOfTasks.Data
         {
             Batteries.Init();
 
+            // Tenhle způsob otevírání, používání a uzavírání databáze se opakuje snad v každé metodě.
+            // Connection se nemusí otevírat při každé práci s db, stačí otevřít jednou pro vykonání nějakého množství práce třeba pomocí BeginTransaction.
             using (var connection = new SqliteConnection(_connectionString))
             {
                 await connection.OpenAsync();
+                
+                // Naplnění testovacích dat lze řešit i automaticky přímo ze C# kódu, opravdu není nutné psát hromadu SQL dotazů zvlášť a pak je takhle provádět čtením souboru.
 
                 // CREATE table
                 var schemaScript = File.ReadAllText("Scripts/Schema.sql");
@@ -58,6 +64,9 @@ namespace RecordOfTasks.Data
                                     " VALUES (@Company, @Description, @Creator, @Assignee, @ReportedDate, @DueDate, @Priority, @Status)";
                 using (var command = new SqliteCommand(query, connection))
                 {
+
+                    // Do nějaké míry se kontroluje validita dat na klientovi, proč ne i na serveru?
+                    // Chybí nějaká mezivrstva (business vrstva), která by data zpracovávala a teprve pak předávala do DB.
                     command.Parameters.AddWithValue("@Company", taskItem.Company);
                     command.Parameters.AddWithValue("@Description", taskItem.Description);
                     command.Parameters.AddWithValue("@Creator", taskItem.Creator);

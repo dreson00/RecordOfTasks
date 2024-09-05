@@ -103,6 +103,7 @@ else
     protected override async void OnInitialized()
     {
 
+        // Entity Framework by tohle zařídil automaticky.
         var uri = NavManager.ToAbsoluteUri(NavManager.Uri);
 
         if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("all", out var all) && all == "true")

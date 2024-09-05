@@ -118,6 +118,7 @@
 }
 
 @code {
+    // Private fieldy začínají podtržítkem.
     private bool saved = false;
     private TaskItem deletedTaskITem;
     private TaskItem newTaskItem = new TaskItem()
@@ -133,21 +134,31 @@
         lastTaskItem = await Db.GetLastTaskItemAsync();
     }
 
+    // Proč všechny async metody tady vrací void?
+    // Co by se teda třeba stalo kdybych kliknul na tlačítko Uložit a pak rychle ještě jednou dřív než by se předchozí uložení stihlo dokončit?
     private async void CreateTaskItemAsync()
     {
         saved = false;
+        // Špatná čitelnost. Moc dlouhé na jeden řádek.
         if (!string.IsNullOrWhiteSpace(newTaskItem.Company) && !string.IsNullOrWhiteSpace(newTaskItem.Description) && !string.IsNullOrWhiteSpace(newTaskItem.Creator) && !string.IsNullOrWhiteSpace(newTaskItem.Assignee) && !string.IsNullOrWhiteSpace(newTaskItem.Priority) && !string.IsNullOrWhiteSpace(newTaskItem.Status))
         {
             newTaskItem.ReportedDate = DateTime.Today;
+
+            // Neměla by se odsud přímo volat DB, ale měla by existovat business vrstva, která by to od sebe oddělovala.
+            // Proč nečekáme na tuhle metodu přes await? Co všechno pak může být v lastTaskItem?
             Db.CreateTaskItemAsync(newTaskItem);
 
+            // Nedal by se tenhle výchozí TaskItem vytvářet efektivněji? Vidím 2x úplně stejný kód.
             newTaskItem = new TaskItem()
                 {
                     DueDate = DateTime.Today,
+                    // Proč je to tu natvrdo napsáno česky ve stringu?
                     Status = "Nový",
                     Priority = "Nízká"
                 };
             saved = true;
+
+            // K čemu se na stránce vůbec zobrazuje poslední přidaný task?
             lastTaskItem = await Db.GetLastTaskItemAsync();
         }
     }

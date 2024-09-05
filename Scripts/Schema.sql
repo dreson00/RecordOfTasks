@@ -1,4 +1,8 @@
-﻿CREATE TABLE IF NOT EXISTS Tasks (
+﻿-- Do budoucna těžko udržitelné schéma tabulek. 
+-- Nebylo by rozumnější rozdělit na víc tabulek pro zadavatele, řešitele a další nezávislé subjekty a použít cizí klíče?
+
+
+CREATE TABLE IF NOT EXISTS Tasks (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     Company TEXT NOT NULL,
     Description TEXT NOT NULL,
